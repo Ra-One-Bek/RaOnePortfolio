@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
+import { useLocation, useNavigate } from "react-router-dom"
 
-type Link = { label: string; id: string; meta: string }
+type Link = { label: string; meta: string; id?: string; to?: string }
 
 const LINKS: Link[] = [
-    { label: "Home", id: "home", meta: "01" },
-    { label: "Skills", id: "skills", meta: "02" },
-    { label: "Projects", id: "projects", meta: "03" },
-    { label: "Contacts", id: "contacts", meta: "04" },
+    { label: "Home", meta: "01", id: "home" },
+    { label: "Projects", meta: "02", id: "projects" },
+    { label: "Contacts", meta: "03", id: "contacts" },
+    { label: "Price list", meta: "04", to: "/pricing" },
 ]
 
 const SOCIALS = [
@@ -17,16 +18,15 @@ const SOCIALS = [
 ]
 
 const EASE = [0.76, 0, 0.24, 1] as const
-
-/** Слои, которые проезжают друг за другом. Последний — с контентом. */
 const SHEETS = ["bg-neutral-300", "bg-neutral-500", "bg-neutral-950"]
 
 export default function Header() {
     const [open, setOpen] = useState(false)
     const [hidden, setHidden] = useState(false)
     const lastY = useRef(0)
+    const navigate = useNavigate()
+    const location = useLocation()
 
-    // прячем шапку при скролле вниз, возвращаем при скролле вверх
     useEffect(() => {
         const onScroll = () => {
             const y = window.scrollY
@@ -37,7 +37,6 @@ export default function Header() {
         return () => window.removeEventListener("scroll", onScroll)
     }, [])
 
-    // блокировка скролла без прыжка страницы + закрытие по Escape
     useEffect(() => {
         if (!open) return
         const gap = window.innerWidth - document.documentElement.clientWidth
@@ -54,23 +53,35 @@ export default function Header() {
         }
     }, [open])
 
-    const go = (id: string) => {
+    const go = (link: Link) => {
         setOpen(false)
         setTimeout(() => {
-            document.getElementById(id)?.scrollIntoView({ behavior: "smooth" })
+            if (link.to) {
+                navigate(link.to)
+                return
+            }
+            if (location.pathname !== "/") {
+                navigate("/", { state: { scrollTo: link.id } })
+                return
+            }
+            document.getElementById(link.id!)?.scrollIntoView({ behavior: "smooth" })
         }, 700)
     }
+
+    const dark = open
 
     return (
         <>
             <motion.header
                 animate={{ y: hidden && !open ? "-120%" : "0%" }}
                 transition={{ duration: 0.45, ease: EASE }}
-                className="fixed inset-x-0 top-0 z-[60] flex items-center justify-between px-5 py-5 mix-blend-difference sm:px-8 md:px-10"
+                className="fixed inset-x-0 top-0 z-[60] flex items-center justify-between px-5 py-5 sm:px-8 md:px-10"
             >
                 <button
-                    onClick={() => go("home")}
-                    className="text-sm tracking-[0.2em] text-slate-600 uppercase"
+                    onClick={() => go({ label: "Home", meta: "01", id: "home" })}
+                    className={`text-sm tracking-[0.2em] uppercase transition-colors ${
+                        dark ? "text-white" : "text-neutral-900"
+                    }`}
                 >
                     RaOne
                 </button>
@@ -80,14 +91,20 @@ export default function Header() {
                     aria-label={open ? "Закрыть меню" : "Открыть меню"}
                     className="group flex items-center gap-3"
                 >
-                    <span className="hidden text-xs tracking-[0.2em] text-gray-500 uppercase sm:block">
+                    <span
+                        className={`hidden text-xs tracking-[0.2em] uppercase transition-colors sm:block ${
+                            dark ? "text-white" : "text-neutral-900"
+                        }`}
+                    >
                         {open ? "Close" : "Menu"}
                     </span>
                     <span className="relative flex h-6 w-8 flex-col justify-center">
                         <motion.span
                             animate={open ? { rotate: 45, y: 0 } : { rotate: 0, y: -4 }}
                             transition={{ duration: 0.4, ease: EASE }}
-                            className="absolute h-px w-8 bg-gray-500"
+                            className={`absolute h-px w-8 transition-colors ${
+                                dark ? "bg-white" : "bg-neutral-900"
+                            }`}
                         />
                         <motion.span
                             animate={
@@ -96,7 +113,9 @@ export default function Header() {
                                     : { rotate: 0, y: 4, width: 20 }
                             }
                             transition={{ duration: 0.4, ease: EASE }}
-                            className="absolute right-0 h-px bg-gray-500"
+                            className={`absolute right-0 h-px transition-colors ${
+                                dark ? "bg-white" : "bg-neutral-900"
+                            }`}
                         />
                     </span>
                 </button>
@@ -105,23 +124,17 @@ export default function Header() {
             <AnimatePresence>
                 {open && (
                     <div className="fixed inset-0 z-50">
-                        {/* слои-шторки */}
                         {SHEETS.map((bg, i) => (
                             <motion.div
                                 key={bg}
                                 initial={{ x: "100%" }}
                                 animate={{ x: "0%" }}
                                 exit={{ x: "100%" }}
-                                transition={{
-                                    duration: 0.75,
-                                    ease: EASE,
-                                    delay: i * 0.07,
-                                }}
+                                transition={{ duration: 0.75, ease: EASE, delay: i * 0.07 }}
                                 className={`absolute inset-0 ${bg}`}
                             />
                         ))}
 
-                        {/* контент */}
                         <motion.nav
                             initial="hidden"
                             animate="show"
@@ -131,11 +144,11 @@ export default function Header() {
                             <ul>
                                 {LINKS.map((link, i) => (
                                     <li
-                                        key={link.id}
+                                        key={link.label}
                                         className="overflow-hidden border-b border-white/10"
                                     >
                                         <motion.button
-                                            onClick={() => go(link.id)}
+                                            onClick={() => go(link)}
                                             variants={{
                                                 hidden: { y: "110%", opacity: 0 },
                                                 show: { y: "0%", opacity: 1 },
@@ -151,7 +164,6 @@ export default function Header() {
                                                 {link.meta}
                                             </span>
 
-                                            {/* перекатывающийся текст */}
                                             <span className="relative block overflow-hidden">
                                                 <span className="block text-4xl leading-[1.05] font-medium tracking-tight text-white transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:-translate-y-full sm:text-6xl md:text-7xl">
                                                     {link.label}
@@ -183,7 +195,7 @@ export default function Header() {
                                 <div className="flex flex-wrap gap-x-6 gap-y-2">
                                     {SOCIALS.map((s) => (
                                         
-                                        <a  key={s.label}
+                                        <a key={s.label}
                                             href={s.href}
                                             target="_blank"
                                             rel="noreferrer"
@@ -202,12 +214,8 @@ export default function Header() {
                                 </a>
                             </motion.div>
 
-                            {/* декоративная подпись-призрак */}
                             <motion.span
-                                variants={{
-                                    hidden: { opacity: 0 },
-                                    show: { opacity: 1 },
-                                }}
+                                variants={{ hidden: { opacity: 0 }, show: { opacity: 1 } }}
                                 transition={{ duration: 1, delay: 0.6 }}
                                 className="pointer-events-none absolute right-4 bottom-24 hidden text-[16vw] leading-none font-black text-white/[0.04] select-none md:block"
                             >
