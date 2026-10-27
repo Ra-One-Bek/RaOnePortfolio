@@ -191,13 +191,13 @@ export default function Hero() {
                             delay={0.15}
                             className="text-center text-3xl leading-tight sm:text-4xl md:text-end md:text-5xl"
                         >
-                            I'm creactive full-stack
+                            I build websites and 
                         </Reveal>
                         <Reveal
                             delay={0.24}
                             className="text-center text-3xl leading-tight sm:text-4xl md:text-end md:text-5xl"
                         >
-                            developer.
+                            full-stack applications.
                         </Reveal>
                     </div>
 
